@@ -4,29 +4,18 @@ const ApiError = require("../error/ApiError");
 
 const path = require("path");
 
-const { v4 } = require("uuid");
+const uuid = require("uuid");
 
 class DeviceController {
   async create(req, res, next) {
     try {
-      const { name, price, brandId, typeId, info } = req.body;
+      let { name, price, brandId, typeId, info } = req.body;
 
       const { img } = req.files;
 
-      let fileName = `${v4()}.jpg`;
+      let fileName = `${uuid.v4()}.jpg`;
 
       img.mv(path.resolve(__dirname, "..", "static", fileName));
-
-      if (info) {
-        info = JSON.parse(info);
-        info.array.forEach((i) => {
-          DeviceInfo.create({
-            deviceId: i.deviceId,
-            title: i.title,
-            description: i.description,
-          });
-        });
-      }
 
       const device = await Device.create({
         name,
@@ -35,6 +24,17 @@ class DeviceController {
         typeId,
         img: fileName,
       });
+
+      if (info) {
+        info = JSON.parse(info);
+        info.forEach((i) => {
+          DeviceInfo.create({
+            deviceId: device.id,
+            title: i.title,
+            description: i.description,
+          });
+        });
+      }
 
       return res.json(device);
     } catch (e) {
